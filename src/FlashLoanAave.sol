@@ -118,7 +118,7 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         uint256 amountOutMin
     ) public returns (uint256) {
         // Approve the Uniswap router to spend tokenA
-        IERC20(_tokenIn).approve(address(ISwapRouter(_swapRouter)), amountIn);
+        IERC20(_tokenIn).approve(_swapRouter, amountIn);
 
         // Execute the swap from tokenIn to tokenOut and return the amountOut
         return
