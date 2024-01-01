@@ -73,10 +73,13 @@ contract FlashLoanAaveTest is Test {
         flashLoanAave.requestFlashLoan(
             mainnetUSDC,
             loanAmount,
-            routers,
+            // routers,
+            routers[0],
+            routers[1],
             tokenIn,
             tokenOut,
-            fees,
+            fees[0],
+            fees[1],
             amountIn,
             amountOutMin
         );
@@ -95,10 +98,12 @@ contract FlashLoanAaveTest is Test {
         flashLoanAave.requestFlashLoan(
             mainnetUSDC,
             loanAmount,
-            routers,
+            routers[0],
+            routers[1],
             tokenIn,
             tokenOut,
-            fees,
+            fees[0],
+            fees[1],
             amountIn,
             amountOutMin
         );

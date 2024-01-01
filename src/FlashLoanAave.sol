@@ -29,30 +29,44 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
 
         // extract arb parameters
         (
-            address[] memory swapRoutersPath,
+            // address[] memory swapRoutersPath,
+            address swapRouterA,
+            address swapRouterB,
             address tokenIn,
             address tokenOut,
-            uint24[] memory fees,
+            uint24 feeA,
+            uint24 feeB,
+            // uint24[] memory fees,
             uint256 amountIn,
             uint256 amountOutMin
         ) = abi.decode(
                 params,
-                (address[], address, address, uint24[], uint256, uint256)
+                // (address[], address, address, uint24[], uint256, uint256)
+                (
+                    address,
+                    address,
+                    address,
+                    address,
+                    uint24,
+                    uint24,
+                    uint256,
+                    uint256
+                )
             );
 
         // execute arb
         // 1st swap (embedded call) - loan amount (tokenIn) to tokenOut
         // 2nd swap - amountOut (tokenOut) back to hopefully more than loan amount (tokenIn)
         performSwap(
-            swapRoutersPath[1],
+            swapRouterB,
             tokenOut,
             tokenIn,
-            fees[1],
+            feeB,
             performSwap(
-                swapRoutersPath[0],
+                swapRouterA,
                 tokenIn,
                 tokenOut,
-                fees[0],
+                feeA,
                 amountIn,
                 amountOutMin
             ),
@@ -65,10 +79,14 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
     function requestFlashLoan(
         address _token,
         uint256 _amount,
-        address[] memory swapRouters,
+        // address[] memory swapRouters,
+        address swapRouterA,
+        address swapRouterB,
         address tokenIn,
         address tokenOut,
-        uint24[] memory fees,
+        // uint24[] memory fees,
+        uint24 feeA,
+        uint24 feeB,
         uint256 amountIn,
         uint256 amountOutMin
     ) public {
@@ -78,10 +96,12 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
             _token,
             _amount,
             abi.encode(
-                swapRouters,
+                swapRouterA,
+                swapRouterB,
                 tokenIn,
                 tokenOut,
-                fees,
+                feeA,
+                feeB,
                 amountIn,
                 amountOutMin
             ),
