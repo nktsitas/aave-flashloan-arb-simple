@@ -29,29 +29,15 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
 
         // extract arb parameters
         (
-            // address[] memory swapRoutersPath,
             address swapRouterA,
             address swapRouterB,
-            address tokenIn,
             address tokenOut,
             uint24 feeA,
             uint24 feeB,
-            // uint24[] memory fees,
-            uint256 amountIn,
             uint256 amountOutMin
         ) = abi.decode(
                 params,
-                // (address[], address, address, uint24[], uint256, uint256)
-                (
-                    address,
-                    address,
-                    address,
-                    address,
-                    uint24,
-                    uint24,
-                    uint256,
-                    uint256
-                )
+                (address, address, address, uint24, uint24, uint256)
             );
 
         // execute arb
@@ -60,14 +46,14 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         performSwap(
             swapRouterB,
             tokenOut,
-            tokenIn,
+            asset,
             feeB,
             performSwap(
                 swapRouterA,
-                tokenIn,
+                asset,
                 tokenOut,
                 feeA,
-                amountIn,
+                amount,
                 amountOutMin
             ),
             amountOutMin
@@ -79,15 +65,11 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
     function requestFlashLoan(
         address _token,
         uint256 _amount,
-        // address[] memory swapRouters,
         address swapRouterA,
         address swapRouterB,
-        address tokenIn,
         address tokenOut,
-        // uint24[] memory fees,
         uint24 feeA,
         uint24 feeB,
-        uint256 amountIn,
         uint256 amountOutMin
     ) public {
         // Trigger the flashloan with arb parameters
@@ -98,11 +80,9 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
             abi.encode(
                 swapRouterA,
                 swapRouterB,
-                tokenIn,
                 tokenOut,
                 feeA,
                 feeB,
-                amountIn,
                 amountOutMin
             ),
             0
@@ -147,9 +127,15 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         _;
     }
 
-    function withdraw(address _tokenAddress) external onlyOwner {
-        uint256 balance = IERC20(_tokenAddress).balanceOf(address(this));
-        IERC20(_tokenAddress).transfer(i_owner, balance);
+    function withdraw(address[] memory _tokenAddresses) external onlyOwner {
+        for (uint256 i = 0; i < _tokenAddresses.length; i++) {
+            uint256 balance = IERC20(_tokenAddresses[i]).balanceOf(
+                address(this)
+            );
+            if (balance > 0) {
+                IERC20(_tokenAddresses[i]).transfer(i_owner, balance);
+            }
+        }
     }
 
     receive() external payable {}

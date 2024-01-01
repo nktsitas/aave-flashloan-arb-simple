@@ -8,7 +8,7 @@ import {MockPool} from "../test/mocks/MockPool.sol";
 contract HelperConfig is Script {
     struct NetworkConfig {
         address aaveAddressProvider;
-        address uniswapRouterAddress;
+        uint256 deployerKey;
     }
 
     NetworkConfig public activeNetworkConfig;
@@ -31,37 +31,37 @@ contract HelperConfig is Script {
 
     function getMainnetNetworkConfig()
         public
-        pure
+        view
         returns (NetworkConfig memory)
     {
         return
             NetworkConfig({
                 aaveAddressProvider: 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e,
-                uniswapRouterAddress: 0xE592427A0AEce92De3Edee1F18E0157C05861564
+                deployerKey: vm.envUint("PRIVATE_KEY")
             });
     }
 
     function getSepoliaNetworkConfig()
         public
-        pure
+        view
         returns (NetworkConfig memory)
     {
         return
             NetworkConfig({
                 aaveAddressProvider: 0x012bAC54348C0E635dCAc9D5FB99f06F24136C9A,
-                uniswapRouterAddress: address(0)
+                deployerKey: vm.envUint("PRIVATE_KEY")
             });
     }
 
     function getGoerliNetworkConfig()
         public
-        pure
+        view
         returns (NetworkConfig memory)
     {
         return
             NetworkConfig({
                 aaveAddressProvider: address(0),
-                uniswapRouterAddress: 0xE592427A0AEce92De3Edee1F18E0157C05861564
+                deployerKey: vm.envUint("PRIVATE_KEY")
             });
     }
 
@@ -77,7 +77,7 @@ contract HelperConfig is Script {
             );
         activeNetworkConfig = NetworkConfig({
             aaveAddressProvider: address(mockPoolAddressProvider),
-            uniswapRouterAddress: makeAddr("")
+            deployerKey: vm.envUint("DEFAULT_ANVIL_KEY")
         });
         vm.stopBroadcast();
 
