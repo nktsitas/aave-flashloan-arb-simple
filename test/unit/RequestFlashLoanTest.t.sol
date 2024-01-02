@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {Test, console} from "../lib/forge-std/src/Test.sol";
-import {DeployFlashLoanAave} from "../script/DeployFlashLoanAave.s.sol";
-import {HelperConfig} from "../script/HelperConfig.s.sol";
-import {FlashLoanAave} from "../src/FlashLoanAave.sol";
-// import {ERC20} from "@aave/core-v3/contracts/dependencies/openzeppelin/contracts/ERC20.sol";
+import {Test, console} from "../../lib/forge-std/src/Test.sol";
+import {DeployFlashLoanAave} from "../../script/DeployFlashLoanAave.s.sol";
+import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {FlashLoanAave} from "../../src/FlashLoanAave.sol";
 import {IERC20} from "@aave/core-v3/contracts/dependencies/openzeppelin/contracts/IERC20.sol";
 
 contract FlashLoanAaveTest is Test {
@@ -22,22 +21,11 @@ contract FlashLoanAaveTest is Test {
 
     address mainnetUSDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address mainnetWETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    // uint256 usdcDecimals = 10 ** ERC20(mainnetUSDC).decimals();
 
     address mainnetETHholder = 0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8;
 
     address mainnetUSDCholder1 = 0x536154cDC1887C0E402Aa24E1baa8a472155856e;
     address mainnetWETHholder1 = 0x44Cc771fBE10DeA3836f37918cF89368589b6316;
-
-    address goerliUNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-    address goerliWETH = 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6;
-    address goerliUNIholder1 = 0xc9d96D21930704cFaB107Ba51EF6093C55ECd242;
-
-    address sepoliaUNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-    address sepoliaWETH = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
-
-    address sepoliaUNIholder1 = 0x79ea449C3375ED1A9d7D99F8068209eA748C6D42;
-    address sepoliaWETHholder1 = 0x287B0e934ed0439E2a7b1d5F0FC25eA2c24b64f7;
 
     function setUp() public {
         deployer = new DeployFlashLoanAave();
@@ -47,8 +35,6 @@ contract FlashLoanAaveTest is Test {
     }
 
     function testFlashLoanAave() public {
-        // address sepoliaUSDC = 0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8;
-
         uint256 startAmount = 60 * 1e6; // 60 USDC
         uint256 loanAmount = 10000 * 1e6; // 10000 USDC
         uint256 remainingAmount = 55 * 1e6; // 55 USDC (60 - fee)
@@ -59,11 +45,7 @@ contract FlashLoanAaveTest is Test {
             "flashLoanAave should have no USDC"
         );
 
-        address tokenIn = mainnetUSDC;
         address tokenOut = mainnetWETH;
-
-        uint256 amountIn = loanAmount;
-        uint256 amountOutMin = 100000;
 
         address[] memory routers = new address[](2);
         routers[0] = mainnetUniswapRouter;

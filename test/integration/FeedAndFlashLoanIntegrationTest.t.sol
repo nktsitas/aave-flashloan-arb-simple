@@ -18,8 +18,6 @@ contract FeedAndFlashLoanIntegrationTest is Test {
     address mainnetWETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     address me = 0x407A826D17a4697a767f20e38a6ab72B6E77F012;
-    // address mainnetWETHUSDClp = 0x6F1cDbBb4d53d226CF4B917bF768B94acbAB6168;
-    // address mainnetWETHUSDClp = 0xc1A1677F90Ea45119762E268bCb7495292C8Eb91;
     address mainnetUSDCholder1 = 0x536154cDC1887C0E402Aa24E1baa8a472155856e;
 
     address mainnetUniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
