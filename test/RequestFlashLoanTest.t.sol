@@ -24,6 +24,8 @@ contract FlashLoanAaveTest is Test {
     address mainnetWETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     // uint256 usdcDecimals = 10 ** ERC20(mainnetUSDC).decimals();
 
+    address mainnetETHholder = 0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8;
+
     address mainnetUSDCholder1 = 0x536154cDC1887C0E402Aa24E1baa8a472155856e;
     address mainnetWETHholder1 = 0x44Cc771fBE10DeA3836f37918cF89368589b6316;
 
@@ -73,6 +75,7 @@ contract FlashLoanAaveTest is Test {
 
         // flashloan should fail due to insufficient funds to send back (failed arb in tests)
         vm.expectRevert();
+        vm.prank(me);
         flashLoanAave.requestFlashLoan(
             mainnetUSDC,
             loanAmount,
@@ -80,8 +83,7 @@ contract FlashLoanAaveTest is Test {
             routers[1],
             tokenOut,
             fees[0],
-            fees[1],
-            0
+            fees[1]
         );
 
         // ---
@@ -95,6 +97,7 @@ contract FlashLoanAaveTest is Test {
             "flashLoanAave should have the fed amount"
         );
 
+        vm.prank(me);
         flashLoanAave.requestFlashLoan(
             mainnetUSDC,
             loanAmount,
@@ -102,8 +105,7 @@ contract FlashLoanAaveTest is Test {
             routers[1],
             tokenOut,
             fees[0],
-            fees[1],
-            0
+            fees[1]
         );
 
         assertEq(
@@ -116,72 +118,6 @@ contract FlashLoanAaveTest is Test {
             IERC20(mainnetUSDC).balanceOf(address(flashLoanAave)),
             remainingAmount,
             "flashLoanAave should have less than fed amount minus the fee (probably failed arb in tests)"
-        );
-    }
-
-    function testPerformSwap() public {
-        address testTokenA;
-        address testTokenB;
-
-        if (block.chainid == 1) {
-            testTokenA = mainnetUSDC;
-            testTokenB = mainnetWETH;
-        } else if (block.chainid == 11155111) {
-            testTokenA = sepoliaUNI;
-            testTokenB = sepoliaWETH;
-        } else if (block.chainid == 5) {
-            testTokenA = goerliUNI;
-            testTokenB = goerliWETH;
-        } else {
-            revert("unsupported chainid");
-        }
-
-        uint256 startAmount;
-        address prankAddress;
-        uint256 amountIn;
-
-        if (block.chainid == 1) {
-            startAmount = 60 * 10e6; // 60 USDC
-            prankAddress = mainnetUSDCholder1;
-            amountIn = 10 * 10e6;
-        } else if (block.chainid == 11155111) {
-            startAmount = 60 * 10e18; // 60 UNI
-            prankAddress = sepoliaUNIholder1;
-            amountIn = 10 * 10e18;
-        } else if (block.chainid == 5) {
-            startAmount = 60 * 10e18; // 60 UNI
-            prankAddress = goerliUNIholder1;
-            amountIn = 10 * 10e18;
-        } else {
-            revert("unsupported chainid");
-        }
-
-        address contractAddress = address(flashLoanAave);
-        // address contractAddress = address(uniswapSimple);
-
-        vm.prank(prankAddress);
-        IERC20(testTokenA).transfer(address(contractAddress), startAmount);
-
-        flashLoanAave.performSwap(
-            // uniswapSimple.performSwap(
-            mainnetUniswapRouter,
-            testTokenA,
-            testTokenB,
-            500,
-            amountIn,
-            0.00001 ether
-        );
-
-        assertEq(
-            IERC20(testTokenA).balanceOf(address(contractAddress)),
-            startAmount - amountIn,
-            "flashLoanAave should have less of starting tokenA"
-        );
-
-        assertGt(
-            IERC20(testTokenB).balanceOf(address(contractAddress)),
-            0,
-            "flashLoanAave should have some tokenB"
         );
     }
 
@@ -229,5 +165,33 @@ contract FlashLoanAaveTest is Test {
                 "me should have amounts of tokens"
             );
         }
+    }
+
+    function testWithdrawETH() public {
+        uint256 amount = 100 * 10e18;
+
+        // transfer ETH to flashLoanAave
+        vm.prank(mainnetETHholder);
+        payable(address(flashLoanAave)).transfer(amount);
+
+        assertEq(
+            address(flashLoanAave).balance,
+            amount,
+            "flashLoanAave should have amount of ETH"
+        );
+
+        vm.expectRevert();
+        flashLoanAave.withdrawETH();
+
+        vm.prank(me);
+        flashLoanAave.withdrawETH();
+
+        assertEq(
+            address(flashLoanAave).balance,
+            0,
+            "flashLoanAave should now be empty of ETH"
+        );
+
+        assertEq(address(me).balance, amount, "I should now have the ETH");
     }
 }

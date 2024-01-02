@@ -14,6 +14,12 @@ contract HelperConfig is Script {
     NetworkConfig public activeNetworkConfig;
 
     constructor() {
+        if (isLocalFork()) {
+            console.log("Local fork activated");
+            activeNetworkConfig = getMainnetLocalForkNetworkConfig();
+            return;
+        }
+
         // check network chainid and set activeNetworkConfig
         if (block.chainid == 11155111) {
             console.log("Sepolia activated");
@@ -29,6 +35,16 @@ contract HelperConfig is Script {
         }
     }
 
+    function isLocalFork() internal view returns (bool) {
+        try vm.envString("LOCAL_FORK") returns (string memory value) {
+            return
+                keccak256(abi.encodePacked(value)) ==
+                keccak256(abi.encodePacked("true"));
+        } catch {
+            return false;
+        }
+    }
+
     function getMainnetNetworkConfig()
         public
         view
@@ -38,6 +54,18 @@ contract HelperConfig is Script {
             NetworkConfig({
                 aaveAddressProvider: 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e,
                 deployerKey: vm.envUint("PRIVATE_KEY")
+            });
+    }
+
+    function getMainnetLocalForkNetworkConfig()
+        public
+        view
+        returns (NetworkConfig memory)
+    {
+        return
+            NetworkConfig({
+                aaveAddressProvider: 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e,
+                deployerKey: vm.envUint("DEFAULT_ANVIL_KEY")
             });
     }
 

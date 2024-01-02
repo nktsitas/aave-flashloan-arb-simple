@@ -34,9 +34,8 @@ contract FeedAndFlashLoanIntegrationTest is Test {
     }
 
     function testFeedPoolAndSwap() public {
-        vm.prank(mainnetUSDCholder1);
-        IERC20(mainnetUSDC).transfer(address(flashLoanAave), 100e6);
-
+        // not the caller
+        vm.expectRevert();
         flashLoanAave.requestFlashLoan(
             mainnetUSDC,
             10000e6,
@@ -44,8 +43,35 @@ contract FeedAndFlashLoanIntegrationTest is Test {
             mainnetUniswapRouter,
             mainnetWETH,
             500,
+            500
+        );
+
+        // not enough assets to pay back
+        vm.expectRevert();
+        vm.prank(me);
+        flashLoanAave.requestFlashLoan(
+            mainnetUSDC,
+            100000e6,
+            mainnetPancakeswapRouter,
+            mainnetUniswapRouter,
+            mainnetWETH,
             500,
-            0
+            500
+        );
+
+        // will pass, but will lose assets
+        vm.prank(mainnetUSDCholder1);
+        IERC20(mainnetUSDC).transfer(address(flashLoanAave), 100e6);
+
+        vm.prank(me);
+        flashLoanAave.requestFlashLoan(
+            mainnetUSDC,
+            10000e6,
+            mainnetPancakeswapRouter,
+            mainnetUniswapRouter,
+            mainnetWETH,
+            500,
+            500
         );
 
         uint256 flashBalance = IERC20(mainnetUSDC).balanceOf(
@@ -91,6 +117,7 @@ contract FeedAndFlashLoanIntegrationTest is Test {
         vm.stopPrank();
 
         // retry flash loan after fluctuation with no balance in. flashloan should cover itself now!
+        vm.prank(me);
         flashLoanAave.requestFlashLoan(
             mainnetUSDC,
             10000e6,
@@ -98,8 +125,7 @@ contract FeedAndFlashLoanIntegrationTest is Test {
             mainnetUniswapRouter,
             mainnetWETH,
             500,
-            500,
-            0
+            500
         );
 
         flashBalance = IERC20(mainnetUSDC).balanceOf(address(flashLoanAave));

@@ -22,6 +22,8 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         address /*initiator*/,
         bytes calldata params
     ) external returns (bool) {
+        require(msg.sender == address(POOL), "Caller must be the lending pool");
+
         // we have the funds!
 
         // approve repayment
@@ -33,12 +35,8 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
             address swapRouterB,
             address tokenOut,
             uint24 feeA,
-            uint24 feeB,
-            uint256 amountOutMin
-        ) = abi.decode(
-                params,
-                (address, address, address, uint24, uint24, uint256)
-            );
+            uint24 feeB
+        ) = abi.decode(params, (address, address, address, uint24, uint24));
 
         // execute arb
         // 1st swap (embedded call) - loan amount (tokenIn) to tokenOut
@@ -48,15 +46,7 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
             tokenOut,
             asset,
             feeB,
-            performSwap(
-                swapRouterA,
-                asset,
-                tokenOut,
-                feeA,
-                amount,
-                amountOutMin
-            ),
-            amountOutMin
+            performSwap(swapRouterA, asset, tokenOut, feeA, amount)
         );
 
         return true;
@@ -69,22 +59,14 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         address swapRouterB,
         address tokenOut,
         uint24 feeA,
-        uint24 feeB,
-        uint256 amountOutMin
-    ) public {
+        uint24 feeB
+    ) public onlyOwner {
         // Trigger the flashloan with arb parameters
         POOL.flashLoanSimple(
             address(this),
             _token,
             _amount,
-            abi.encode(
-                swapRouterA,
-                swapRouterB,
-                tokenOut,
-                feeA,
-                feeB,
-                amountOutMin
-            ),
+            abi.encode(swapRouterA, swapRouterB, tokenOut, feeA, feeB),
             0
         );
     }
@@ -94,9 +76,8 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         address _tokenIn,
         address _tokenOut,
         uint24 _fee,
-        uint256 amountIn,
-        uint256 amountOutMin
-    ) public returns (uint256) {
+        uint256 amountIn
+    ) private returns (uint256 amountOut) {
         // Approve the Uniswap router to spend tokenA
         IERC20(_tokenIn).approve(_swapRouter, amountIn);
 
@@ -110,7 +91,7 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
                     recipient: address(this),
                     deadline: block.timestamp,
                     amountIn: amountIn,
-                    amountOutMinimum: amountOutMin,
+                    amountOutMinimum: 0,
                     sqrtPriceLimitX96: 0
                 })
             );
@@ -122,7 +103,7 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
 
     modifier onlyOwner() {
         if (msg.sender != i_owner) {
-            return;
+            revert("caller is not the owner");
         }
         _;
     }
@@ -136,6 +117,10 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
                 IERC20(_tokenAddresses[i]).transfer(i_owner, balance);
             }
         }
+    }
+
+    function withdrawETH() external onlyOwner {
+        i_owner.transfer(address(this).balance);
     }
 
     receive() external payable {}
