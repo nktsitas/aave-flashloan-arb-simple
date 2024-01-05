@@ -20,11 +20,13 @@ contract FlashLoanAaveTest is Test {
         0x1b81D678ffb9C0263b24A97847620C99d213eB14;
 
     address mainnetUSDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address mainnetUSDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
     address mainnetWETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     address mainnetETHholder = 0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8;
 
     address mainnetUSDCholder1 = 0x536154cDC1887C0E402Aa24E1baa8a472155856e;
+    address mainnetUSDTholder1 = 0xA7A93fd0a276fc1C0197a5B5623eD117786eeD06;
     address mainnetWETHholder1 = 0x44Cc771fBE10DeA3836f37918cF89368589b6316;
 
     function setUp() public {
@@ -35,12 +37,16 @@ contract FlashLoanAaveTest is Test {
     }
 
     function testFlashLoanAave() public {
-        uint256 startAmount = 60 * 1e6; // 60 USDC
-        uint256 loanAmount = 10000 * 1e6; // 10000 USDC
-        uint256 remainingAmount = 55 * 1e6; // 55 USDC (60 - fee)
+        address quote = mainnetUSDT;
+        address quoteHolder = mainnetUSDTholder1;
+        uint256 decimals = 1e6;
+
+        uint256 startAmount = 60 * decimals; // 60 USDC
+        uint256 loanAmount = 10000 * decimals; // 10000 USDC
+        uint256 remainingAmount = 55 * decimals; // 55 USDC (60 - fee)
 
         assertEq(
-            IERC20(mainnetUSDC).balanceOf(address(flashLoanAave)),
+            IERC20(quote).balanceOf(address(flashLoanAave)),
             0,
             "flashLoanAave should have no USDC"
         );
@@ -59,35 +65,43 @@ contract FlashLoanAaveTest is Test {
         vm.expectRevert();
         vm.prank(me);
         flashLoanAave.requestFlashLoan(
-            mainnetUSDC,
+            quote,
             loanAmount,
             routers[0],
             routers[1],
             tokenOut,
             fees[0],
-            fees[1]
+            fees[1],
+            false
         );
 
         // ---
 
-        vm.prank(mainnetUSDCholder1);
-        IERC20(mainnetUSDC).transfer(address(flashLoanAave), startAmount);
+        vm.prank(quoteHolder);
+        quote.call(
+            abi.encodeWithSelector(
+                IERC20.transfer.selector,
+                address(flashLoanAave),
+                startAmount
+            )
+        );
 
         assertEq(
-            IERC20(mainnetUSDC).balanceOf(address(flashLoanAave)),
+            IERC20(quote).balanceOf(address(flashLoanAave)),
             startAmount,
             "flashLoanAave should have the fed amount"
         );
 
         vm.prank(me);
         flashLoanAave.requestFlashLoan(
-            mainnetUSDC,
+            quote,
             loanAmount,
             routers[0],
             routers[1],
             tokenOut,
             fees[0],
-            fees[1]
+            fees[1],
+            false
         );
 
         assertEq(
@@ -97,9 +111,23 @@ contract FlashLoanAaveTest is Test {
         );
 
         assertLt(
-            IERC20(mainnetUSDC).balanceOf(address(flashLoanAave)),
+            IERC20(quote).balanceOf(address(flashLoanAave)),
             remainingAmount,
             "flashLoanAave should have less than fed amount minus the fee (probably failed arb in tests)"
+        );
+
+        // test empty out first - transaction should fail (not enough funds cause they're emptied out first)
+        vm.prank(me);
+        vm.expectRevert();
+        flashLoanAave.requestFlashLoan(
+            quote,
+            loanAmount,
+            routers[0],
+            routers[1],
+            tokenOut,
+            fees[0],
+            fees[1],
+            true
         );
     }
 
@@ -150,7 +178,7 @@ contract FlashLoanAaveTest is Test {
     }
 
     function testWithdrawETH() public {
-        uint256 amount = 100 * 10e18;
+        uint256 amount = 1 * 10e18;
 
         // transfer ETH to flashLoanAave
         vm.prank(mainnetETHholder);

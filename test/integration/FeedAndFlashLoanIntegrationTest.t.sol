@@ -41,7 +41,8 @@ contract FeedAndFlashLoanIntegrationTest is Test {
             mainnetUniswapRouter,
             mainnetWETH,
             500,
-            500
+            500,
+            false
         );
 
         // not enough assets to pay back
@@ -54,7 +55,8 @@ contract FeedAndFlashLoanIntegrationTest is Test {
             mainnetUniswapRouter,
             mainnetWETH,
             500,
-            500
+            500,
+            false
         );
 
         // will pass, but will lose assets
@@ -69,7 +71,8 @@ contract FeedAndFlashLoanIntegrationTest is Test {
             mainnetUniswapRouter,
             mainnetWETH,
             500,
-            500
+            500,
+            false
         );
 
         uint256 flashBalance = IERC20(mainnetUSDC).balanceOf(
@@ -123,7 +126,8 @@ contract FeedAndFlashLoanIntegrationTest is Test {
             mainnetUniswapRouter,
             mainnetWETH,
             500,
-            500
+            500,
+            false
         );
 
         flashBalance = IERC20(mainnetUSDC).balanceOf(address(flashLoanAave));

@@ -25,7 +25,19 @@ contract UniswapV3Swap {
         uint256 amountOutMinimum,
         uint160 sqrtPriceLimitX96
     ) external {
-        IERC20(tokenIn).approve(address(swapRouter), amountIn);
+        // IERC20(tokenIn).approve(address(swapRouter), amountIn);
+
+        // Low-level call to `approve`
+        (bool success, ) = tokenIn.call(
+            abi.encodeWithSelector(
+                IERC20.approve.selector,
+                address(swapRouter),
+                amountIn
+            )
+        );
+
+        // Check if the low-level call was successful
+        require(success, "Approval failed");
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({

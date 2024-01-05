@@ -6,6 +6,8 @@ import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAd
 import {IERC20} from "@aave/core-v3/contracts/dependencies/openzeppelin/contracts/IERC20.sol";
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
+import {console} from "../lib/forge-std/src/Script.sol";
+
 contract FlashLoanAave is FlashLoanSimpleReceiverBase {
     address payable immutable i_owner;
 
@@ -13,6 +15,8 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         address _addressProvider
     ) FlashLoanSimpleReceiverBase(IPoolAddressesProvider(_addressProvider)) {
         i_owner = payable(msg.sender);
+        console.log("mpasta: ", i_owner);
+        console.log("mpasta: ", address(this));
     }
 
     function executeOperation(
@@ -26,8 +30,16 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
 
         // we have the funds!
 
-        // approve repayment
-        IERC20(asset).approve(address(POOL), amount + premium);
+        // Low-level call to `approve`
+        (bool success, ) = asset.call(
+            abi.encodeWithSelector(
+                IERC20.approve.selector,
+                address(POOL),
+                amount + premium
+            )
+        );
+        // Check if the low-level call was successful
+        require(success, "Approval failed");
 
         // extract arb parameters
         (
@@ -59,8 +71,25 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         address swapRouterB,
         address tokenOut,
         uint24 feeA,
-        uint24 feeB
+        uint24 feeB,
+        bool emptyOutFirst
     ) public onlyOwner {
+        uint256 balance = IERC20(_token).balanceOf(address(this));
+        console.log("balance: ", balance);
+
+        // Empty out any tokens first to avoid overspending
+        if (balance > 0 && emptyOutFirst) {
+            (bool success, ) = _token.call(
+                abi.encodeWithSelector(
+                    IERC20.transfer.selector,
+                    address(i_owner),
+                    IERC20(_token).balanceOf(address(this))
+                )
+            );
+            // Check if the low-level call was successful
+            require(success, "Token transfer failed");
+        }
+
         // Trigger the flashloan with arb parameters
         POOL.flashLoanSimple(
             address(this),
@@ -78,8 +107,17 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         uint24 _fee,
         uint256 amountIn
     ) private returns (uint256 amountOut) {
-        // Approve the Uniswap router to spend tokenA
-        IERC20(_tokenIn).approve(_swapRouter, amountIn);
+        // Low-level call to `approve`
+        (bool success, ) = _tokenIn.call(
+            abi.encodeWithSelector(
+                IERC20.approve.selector,
+                address(_swapRouter),
+                amountIn
+            )
+        );
+
+        // Check if the low-level call was successful
+        require(success, "Approval failed");
 
         // Execute the swap from tokenIn to tokenOut and return the amountOut
         return
