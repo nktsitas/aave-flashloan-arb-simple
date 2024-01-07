@@ -78,13 +78,14 @@ contract FlashLoanAaveTest is Test {
         // ---
 
         vm.prank(quoteHolder);
-        quote.call(
+        (bool success, ) = quote.call(
             abi.encodeWithSelector(
                 IERC20.transfer.selector,
                 address(flashLoanAave),
                 startAmount
             )
         );
+        assertEq(success, true, "transfer should succeed");
 
         assertEq(
             IERC20(quote).balanceOf(address(flashLoanAave)),
@@ -144,6 +145,10 @@ contract FlashLoanAaveTest is Test {
         tokenHolders[0] = mainnetUSDCholder1;
         tokenHolders[1] = mainnetWETHholder1;
 
+        uint256[] memory balancesBefore = new uint256[](2);
+        balancesBefore[0] = IERC20(tokens[0]).balanceOf(address(me));
+        balancesBefore[1] = IERC20(tokens[1]).balanceOf(address(me));
+
         for (uint256 i = 0; i < tokens.length; i++) {
             vm.prank(tokenHolders[i]);
             IERC20(tokens[i]).transfer(address(flashLoanAave), amounts[i]);
@@ -171,10 +176,46 @@ contract FlashLoanAaveTest is Test {
         for (uint256 i = 0; i < tokens.length; i++) {
             assertEq(
                 IERC20(tokens[i]).balanceOf(me),
-                amounts[i],
+                amounts[i] + balancesBefore[i],
                 "me should have amounts of tokens"
             );
         }
+    }
+
+    function testProfitability() public {
+        address token = mainnetUSDC;
+        uint256 amount = 100 * 10e6;
+
+        vm.prank(mainnetUSDCholder1);
+        IERC20(token).transfer(address(flashLoanAave), amount);
+
+        assertEq(
+            IERC20(token).balanceOf(address(flashLoanAave)),
+            amount,
+            "flashLoanAave should have amount of token"
+        );
+
+        vm.expectRevert();
+        flashLoanAave.ensureProfitability(token, amount + 1);
+
+        vm.expectRevert();
+        vm.prank(me);
+        flashLoanAave.ensureProfitability(token, amount + 1);
+
+        vm.prank(me);
+        flashLoanAave.ensureProfitability(token, amount);
+
+        assertEq(
+            IERC20(token).balanceOf(address(flashLoanAave)),
+            0,
+            "flashLoanAave should now be empty of token"
+        );
+
+        assertEq(
+            IERC20(token).balanceOf(me),
+            amount,
+            "I should now have the token"
+        );
     }
 
     function testWithdrawETH() public {
@@ -183,6 +224,8 @@ contract FlashLoanAaveTest is Test {
         // transfer ETH to flashLoanAave
         vm.prank(mainnetETHholder);
         payable(address(flashLoanAave)).transfer(amount);
+
+        uint256 balanceBefore = address(me).balance;
 
         assertEq(
             address(flashLoanAave).balance,
@@ -202,6 +245,10 @@ contract FlashLoanAaveTest is Test {
             "flashLoanAave should now be empty of ETH"
         );
 
-        assertEq(address(me).balance, amount, "I should now have the ETH");
+        assertEq(
+            address(me).balance,
+            amount + balanceBefore,
+            "I should now have the ETH"
+        );
     }
 }

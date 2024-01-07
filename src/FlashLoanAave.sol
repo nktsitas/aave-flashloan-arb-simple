@@ -6,8 +6,6 @@ import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAd
 import {IERC20} from "@aave/core-v3/contracts/dependencies/openzeppelin/contracts/IERC20.sol";
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
-import {console} from "../lib/forge-std/src/Script.sol";
-
 contract FlashLoanAave is FlashLoanSimpleReceiverBase {
     address payable immutable i_owner;
 
@@ -15,8 +13,6 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         address _addressProvider
     ) FlashLoanSimpleReceiverBase(IPoolAddressesProvider(_addressProvider)) {
         i_owner = payable(msg.sender);
-        console.log("mpasta: ", i_owner);
-        console.log("mpasta: ", address(this));
     }
 
     function executeOperation(
@@ -75,7 +71,6 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
         bool emptyOutFirst
     ) public onlyOwner {
         uint256 balance = IERC20(_token).balanceOf(address(this));
-        console.log("balance: ", balance);
 
         // Empty out any tokens first to avoid overspending
         if (balance > 0 && emptyOutFirst) {
@@ -135,6 +130,17 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
             );
     }
 
+    function ensureProfitability(
+        address _tokenAddress,
+        uint256 _amount
+    ) external onlyOwner {
+        uint256 balance = IERC20(_tokenAddress).balanceOf(address(this));
+
+        require(balance >= _amount, "Insufficient profit");
+
+        IERC20(_tokenAddress).transfer(i_owner, balance);
+    }
+
     function getBalance(address _tokenAddress) external view returns (uint256) {
         return IERC20(_tokenAddress).balanceOf(address(this));
     }
@@ -159,6 +165,11 @@ contract FlashLoanAave is FlashLoanSimpleReceiverBase {
 
     function withdrawETH() external onlyOwner {
         i_owner.transfer(address(this).balance);
+    }
+
+    // Function to send ETH to the miner (block.coinbase)
+    function sendMinerTip() external payable onlyOwner {
+        payable(block.coinbase).transfer(msg.value);
     }
 
     receive() external payable {}

@@ -14,8 +14,8 @@ me=0x407A826D17a4697a767f20e38a6ab72B6E77F012
 feedAmount=80000000000000
 swapAmount=3000000000000
 
-holder=${holderUSDC}
-quote=${USDC}
+holder=${holderUSDT}
+quote=${USDT}
 
 source .env
 
